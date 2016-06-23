@@ -32,7 +32,7 @@
         android:layout_marginTop="30dp"
         android:layout_toLeftOf="@+id/suchButton"
         android:layout_toStartOf="@+id/suchButton"
-        android:imeOptions="actionSend"
+        android:imeOptions="actionSearch"
         android:inputType="text"
         android:hint="Country" />
 

@@ -1,14 +1,13 @@
 package de.tofe.cofeto;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -20,6 +19,9 @@ import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class MainActivity extends Activity {
 
@@ -49,6 +51,19 @@ public class MainActivity extends Activity {
         _ergebnisTextView = (TextView) findViewById( R.id.ergebnisTextView );
 
         _ergebnisTextView.setMovementMethod(new ScrollingMovementMethod()); // um vertikales Scrolling zu ermöglichen
+
+        _landEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                boolean handled = false;
+                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                    onStartButtonBetaetigt(null);
+                    handled = true;
+                }
+                return handled;
+            }
+        });
     }
 
     //Tastatur nach Suche ausblenden
@@ -57,20 +72,17 @@ public class MainActivity extends Activity {
     mgr.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);*/
 
     //Listener für Tastatur-Suchbutton
-    /*_landEditText.setOnEditorActionListener(new OnEditorActionListener() {
-        @Override
-        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-            boolean handled = false;
-            if (actionId == EditorInfo.IME_ACTION_SEND) {
-                sendMessage();
-                handled = true;
-            }
-            return handled;
-        }
-    });*/
+
 
     //Event-Handler für Start-Button, wird in Layout-Daten mit Attribut "android:onClick" zugewiesen
     public void onStartButtonBetaetigt(View view) {
+
+        // //ist nur für Tastatur
+        InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        mgr.hideSoftInputFromWindow(_landEditText.getWindowToken(), 0);
+        mgr.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);
+
+        _landEditText.setCursorVisible(false);
 
         _suchButton.setEnabled(false); // Button deaktivieren während ein HTTP-Request läuft
 
