@@ -67,14 +67,6 @@ public class MainActivity extends Activity {
         });
     }
 
-
-    /*InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-    mgr.hideSoftInputFromWindow(curEditText.getWindowToken(), 0);
-    mgr.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);*/
-
-
-
-
     //Event-Handler für Start-Button, wird in Layout-Daten mit Attribut "android:onClick" zugewiesen
     public void onStartButtonBetaetigt(View view) {
 
