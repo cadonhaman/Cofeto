@@ -109,7 +109,7 @@ public class MainActivity extends Activity {
     protected String parseJSON(String jsonString) throws Exception {
 
         if (jsonString == null || jsonString.trim().length() == 0) {
-            return "Keine Informationen zu dem Suchbegriff gefunden.";
+            return "Keine Informationen gefunden.";
         }
 
         JSONArray jsonArray = new JSONArray(jsonString); // eigentliches Parsen
@@ -147,8 +147,8 @@ public class MainActivity extends Activity {
                 ergbnisDarstellen( ergString );
             }
             catch (Exception ex) {
-                //IN Toast auslagern, ODER nicht anzeigen
-                ergbnisDarstellen( "Exception aufgetreten: " + ex.getMessage() );
+                ergbnisDarstellen( "Keine Informationen gefunden.");
+                //ex.getMessage()
             }
         }
 
