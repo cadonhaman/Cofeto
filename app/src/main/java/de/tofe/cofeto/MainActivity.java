@@ -52,6 +52,7 @@ public class MainActivity extends Activity {
 
         _ergebnisTextView.setMovementMethod(new ScrollingMovementMethod()); // um vertikales Scrolling zu ermöglichen
 
+        //Listener für Tastatur-Suchbutton
         _landEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
 
             @Override
@@ -66,23 +67,24 @@ public class MainActivity extends Activity {
         });
     }
 
-    //Tastatur nach Suche ausblenden
+
     /*InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
     mgr.hideSoftInputFromWindow(curEditText.getWindowToken(), 0);
     mgr.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);*/
 
-    //Listener für Tastatur-Suchbutton
+
 
 
     //Event-Handler für Start-Button, wird in Layout-Daten mit Attribut "android:onClick" zugewiesen
     public void onStartButtonBetaetigt(View view) {
 
-        // //ist nur für Tastatur
+        //Tastatur nach Suche und Cursor ausblenden
         InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         mgr.hideSoftInputFromWindow(_landEditText.getWindowToken(), 0);
         mgr.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);
 
         _landEditText.setCursorVisible(false);
+
 
         _suchButton.setEnabled(false); // Button deaktivieren während ein HTTP-Request läuft
 
@@ -128,15 +130,18 @@ public class MainActivity extends Activity {
 
         String capital = "";
         String subregion = "";
+        String population = "";
 
         for (int i = 0; i < jsonArray.length(); i++) {
             JSONObject jsonobject = jsonArray.getJSONObject(i);
             capital = jsonobject.getString("capital");
             subregion = jsonobject.getString("subregion");
+            population = jsonobject.getString("population");
+
         }
 
         // String für Ausgabe auf UI zusammenbauen
-        return "Hauptstadt: " + capital  + "\nRegion: " + subregion;
+        return "Hauptstadt: " + capital  + "\nRegion: " + subregion  + "\nBevölkerung: " + population;
     }
 
 
