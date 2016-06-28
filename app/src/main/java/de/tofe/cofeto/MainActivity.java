@@ -84,12 +84,13 @@ public class MainActivity extends Activity {
 
         _eingabeLand = _landEditText.getText().toString();
 
-        // Hintergrund-Thread mit HTTP-Request starten
+        //Hintergrund-Thread mit HTTP-Request starten
         MeinHintergrundThread mht = new MeinHintergrundThread();
         mht.start();
         _landEditText.setCursorVisible(true);
     }
 
+    //Überprüfung der Internetverbindung → Anzeige spezifischer Warnmeldung möglich
     public boolean isOnline() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
@@ -99,7 +100,7 @@ public class MainActivity extends Activity {
         return false;
     }
 
-    //In dieser Methode wird der HTTP-Request zur Web-API durchgeführt
+    //Methode für HTTP-Request zur Web-API
     protected String holeDatenVonWebAPI() throws Exception {
 
         //1: Request-Factory holen
@@ -164,7 +165,7 @@ public class MainActivity extends Activity {
 
         }
 
-        // String für Ausgabe auf UI zusammenbauen
+        //String für Ausgabe auf UI zusammenbauen
         return "Capital: " + capital  + "\nRegion: " + region  + "\nSubregion: " + subregion  + "\nPopulation: " + population   + "\nCurrencies: " + currencies    + "\nBorders: " + borders     + "\nCalling Codes: " + callingCodes;
     }
 
@@ -173,7 +174,7 @@ public class MainActivity extends Activity {
 	/* *** Start innere Klasse *** */
 	/* *************************** */
 
-    // Zugriff auf Web-API (Internet-Zugriff) wird in eigenen Thread ausgelagert
+    //Zugriff auf Web-API (Internet-Zugriff) wird in eigenen Thread ausgelagert
     protected class MeinHintergrundThread extends Thread {
 
         //Der Inhalt in der überschriebenen <i>run()</i>-Methode wird in einem Hintergrund-Thread ausgeführt
