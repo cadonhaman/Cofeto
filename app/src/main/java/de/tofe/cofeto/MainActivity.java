@@ -2,6 +2,8 @@ package de.tofe.cofeto;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -13,6 +15,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.api.client.http.GenericUrl;
@@ -24,6 +27,12 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class MainActivity extends Activity {
 
@@ -41,6 +50,10 @@ public class MainActivity extends Activity {
     //TextView zur Anzeige des Ergebnisses des Web-Requests auch zur Anzeige von Fehlermeldungen
     protected TextView _ergebnisTextView = null;
 
+    protected ImageView _flagImageView = null;
+
+    protected String _landkuerzel = "";
+
 
     //Lifecycle-Methode; Layout für UI laden und Referenzen auf UI-Elemente holen
     @Override
@@ -51,6 +64,7 @@ public class MainActivity extends Activity {
         _suchButton       = (Button)   findViewById( R.id.suchButton );
         _landEditText     = (EditText) findViewById( R.id.landEditText );
         _ergebnisTextView = (TextView) findViewById( R.id.ergebnisTextView );
+        _flagImageView = (ImageView) findViewById( R.id.flagImageView);
 
         _ergebnisTextView.setMovementMethod(new ScrollingMovementMethod()); // um vertikales Scrolling zu ermöglichen
 
@@ -90,6 +104,17 @@ public class MainActivity extends Activity {
         _landEditText.setCursorVisible(true);
     }
 
+    public InputStream zeigeBild(String landKuerzel)throws Exception {
+
+        URL url = new URL("http://www.geonames.org/flags/x/" + landKuerzel + ".gif");
+        Log.i(TAG4LOGGING, "URL: " + url);
+
+        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+        Log.i(TAG4LOGGING, "Response Code of HTTP Request: " + urlConnection.getResponseCode() + urlConnection.getResponseMessage());
+
+        return new BufferedInputStream(urlConnection.getInputStream());
+    }
+
     //Überprüfung der Internetverbindung → Anzeige spezifischer Warnmeldung möglich
     public boolean isOnline() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -122,6 +147,38 @@ public class MainActivity extends Activity {
         return jsonResponseString;
     }
 
+    protected void bildDarstellen(InputStream inputStream) throws IOException {
+
+        final Bitmap bitmap = BitmapFactory.decodeStream( inputStream );
+
+        inputStream.close();
+
+        /*if (bitmap == null) {
+            _startButton.post( new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this,
+                            "Fehler: Leeres Bitmap-Objekt als Ergebnis der Dekodierung erhalten.", Toast.LENGTH_LONG).show();
+
+                }
+            });
+        }*/
+
+
+        Log.i(TAG4LOGGING, "Bitmap dekodiert, Höhe=" + bitmap.getHeight() + ", Breite=" + bitmap.getWidth() );
+        // Die Bilder sollten immer die Größe 512x512 haben
+
+
+        _flagImageView.post( new Runnable() {
+            @Override
+            public void run() {
+                _flagImageView.setVisibility(View.VISIBLE);
+                _flagImageView.setImageBitmap(bitmap);
+                           }
+        });
+
+    }
+
 
     //Parsen des JSON-Dokuments <i>jsonString</i>, das von der Web-API zurückgeliefert wurde
     protected String parseJSON(String jsonString) throws Exception {
@@ -139,6 +196,9 @@ public class MainActivity extends Activity {
         String currencies = "";
         String borders = "";
         String callingCodes = "";
+        String altSpellings = "";
+        Character eins = null;
+        Character zwei = null;
 
         for (int i = 0; i < jsonArray.length(); i++) {
             JSONObject jsonobject = jsonArray.getJSONObject(i);
@@ -149,6 +209,8 @@ public class MainActivity extends Activity {
             currencies = jsonobject.getString("currencies");
             borders = jsonobject.getString("borders");
             callingCodes = jsonobject.getString("callingCodes");
+            altSpellings = jsonobject.getString("altSpellings");
+
 
             currencies = currencies.replace("[", "");
             currencies = currencies.replace("]", "");
@@ -162,12 +224,20 @@ public class MainActivity extends Activity {
             currencies = currencies.replace(",", ", ");
             borders = borders.replace(",", ", ");
             callingCodes = callingCodes.replace(",", ", ");
-
+            eins = altSpellings.charAt(2);
+            zwei = altSpellings.charAt(3);
+            altSpellings = eins.toString()+zwei.toString();
+            altSpellings = altSpellings.toLowerCase();
         }
+
+        _landkuerzel = altSpellings;
 
         //String für Ausgabe auf UI zusammenbauen
         return "Capital: " + capital  + "\nRegion: " + region  + "\nSubregion: " + subregion  + "\nPopulation: " + population   + "\nCurrencies: " + currencies    + "\nBorders: " + borders     + "\nCalling Codes: " + callingCodes;
     }
+
+
+
 
 
 	/* *************************** */
@@ -188,9 +258,14 @@ public class MainActivity extends Activity {
                     String ergString = parseJSON(jsonDocument);
 
                     ergebnisDarstellen( ergString );
+
+                    InputStream input = zeigeBild(_landkuerzel);
+
+                    bildDarstellen(input);
                 }
                 else{
                     ergebnisDarstellen("Keine Internetverbindung verfügbar.");
+                    bildReset();
                 }
 
 
@@ -218,6 +293,16 @@ public class MainActivity extends Activity {
                 }
             });
 
+        }
+
+        protected void bildReset(){
+            _suchButton.post( new Runnable() { // wir könnten auch die post()-Methode des TextView-Elements verwenden
+                @Override
+                public void run() {
+
+                    _flagImageView.setVisibility(View.GONE);
+                }
+            });
         }
 
     };
