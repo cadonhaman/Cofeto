@@ -87,6 +87,7 @@ public class MainActivity extends Activity {
         // Hintergrund-Thread mit HTTP-Request starten
         MeinHintergrundThread mht = new MeinHintergrundThread();
         mht.start();
+        _landEditText.setCursorVisible(true);
     }
 
     public boolean isOnline() {
@@ -131,19 +132,40 @@ public class MainActivity extends Activity {
         JSONArray jsonArray = new JSONArray(jsonString); // eigentliches Parsen
 
         String capital = "";
+        String region = "";
         String subregion = "";
         String population = "";
+        String currencies = "";
+        String borders = "";
+        String callingCodes = "";
 
         for (int i = 0; i < jsonArray.length(); i++) {
             JSONObject jsonobject = jsonArray.getJSONObject(i);
             capital = jsonobject.getString("capital");
+            region = jsonobject.getString("region");
             subregion = jsonobject.getString("subregion");
             population = jsonobject.getString("population");
+            currencies = jsonobject.getString("currencies");
+            borders = jsonobject.getString("borders");
+            callingCodes = jsonobject.getString("callingCodes");
+
+            currencies = currencies.replace("[", "");
+            currencies = currencies.replace("]", "");
+            callingCodes = callingCodes.replace("[", "");
+            callingCodes = callingCodes.replace("]", "");
+            borders = borders.replace("[", "");
+            borders = borders.replace("]", "");
+            currencies = currencies.replace("\"", "");
+            borders = borders.replace("\"", "");
+            callingCodes = callingCodes.replace("\"", "");
+            currencies = currencies.replace(",", ", ");
+            borders = borders.replace(",", ", ");
+            callingCodes = callingCodes.replace(",", ", ");
 
         }
 
         // String für Ausgabe auf UI zusammenbauen
-        return "Hauptstadt: " + capital  + "\nRegion: " + subregion  + "\nBevölkerung: " + population;
+        return "Capital: " + capital  + "\nRegion: " + region  + "\nSubregion: " + subregion  + "\nPopulation: " + population   + "\nCurrencies: " + currencies    + "\nBorders: " + borders     + "\nCalling Codes: " + callingCodes;
     }
 
 

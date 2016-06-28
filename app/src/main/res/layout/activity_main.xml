@@ -12,7 +12,7 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Suchen"
+        android:text="Search"
         android:id="@+id/suchButton"
         android:layout_marginRight="15dp"
         android:layout_marginEnd="15dp"
