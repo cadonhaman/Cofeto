@@ -273,6 +273,7 @@ public class MainActivity extends Activity {
             catch (Exception ex) {
                 //if(internet = true) {
                     ergebnisDarstellen("Keine Informationen gefunden.");
+                    bildReset();
             }
         }
 
