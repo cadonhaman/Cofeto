@@ -2,6 +2,8 @@ package de.tofe.cofeto;
 
 import android.app.Activity;
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -87,6 +89,14 @@ public class MainActivity extends Activity {
         mht.start();
     }
 
+    public boolean isOnline() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        if (netInfo != null && netInfo.isConnectedOrConnecting()) {
+            return true;
+        }
+        return false;
+    }
 
     //In dieser Methode wird der HTTP-Request zur Web-API durchgeführt
     protected String holeDatenVonWebAPI() throws Exception {
@@ -147,23 +157,31 @@ public class MainActivity extends Activity {
         //Der Inhalt in der überschriebenen <i>run()</i>-Methode wird in einem Hintergrund-Thread ausgeführt
         @Override
         public void run() {
-
             try {
-                String jsonDocument = holeDatenVonWebAPI();
+                String jsonDocument ="";
+                if(isOnline()) {
+                    jsonDocument = holeDatenVonWebAPI();
 
-                String ergString = parseJSON(jsonDocument);
+                    String ergString = parseJSON(jsonDocument);
 
-                ergbnisDarstellen( ergString );
+                    ergebnisDarstellen( ergString );
+                }
+                else{
+                    ergebnisDarstellen("Keine Internetverbindung verfügbar.");
+                }
+
+
             }
             catch (Exception ex) {
-                ergbnisDarstellen( "Keine Informationen gefunden.");
-                //ex.getMessage()
+                //if(internet = true) {
+                    ergebnisDarstellen("Keine Informationen gefunden.");
             }
         }
 
 
+
         //Methode um Ergebnis-String in TextView darzustellen
-        protected void ergbnisDarstellen(String ergebnisStr) {
+        protected void ergebnisDarstellen(String ergebnisStr) {
 
             final String finalString = ergebnisStr;
 
