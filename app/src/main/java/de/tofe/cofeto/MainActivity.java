@@ -104,17 +104,6 @@ public class MainActivity extends Activity {
         _landEditText.setCursorVisible(true);
     }
 
-    public InputStream zeigeBild(String landKuerzel)throws Exception {
-
-        URL url = new URL("http://www.geonames.org/flags/x/" + landKuerzel + ".gif");
-        Log.i(TAG4LOGGING, "URL: " + url);
-
-        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-        Log.i(TAG4LOGGING, "Response Code of HTTP Request: " + urlConnection.getResponseCode() + urlConnection.getResponseMessage());
-
-        return new BufferedInputStream(urlConnection.getInputStream());
-    }
-
     //Überprüfung der Internetverbindung → Anzeige spezifischer Warnmeldung möglich
     public boolean isOnline() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -123,6 +112,18 @@ public class MainActivity extends Activity {
             return true;
         }
         return false;
+    }
+
+    public InputStream holeBild(String landKuerzel)throws Exception {
+
+        //Zusammenbauen der URL für die Flagge zum eingegebenen Land
+        URL url = new URL("http://www.geonames.org/flags/x/" + landKuerzel + ".gif");
+        Log.i(TAG4LOGGING, "URL: " + url);
+
+        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+        Log.i(TAG4LOGGING, "Response Code of HTTP Request: " + urlConnection.getResponseCode() + urlConnection.getResponseMessage());
+
+        return new BufferedInputStream(urlConnection.getInputStream());
     }
 
     //Methode für HTTP-Request zur Web-API
@@ -153,21 +154,7 @@ public class MainActivity extends Activity {
 
         inputStream.close();
 
-        /*if (bitmap == null) {
-            _startButton.post( new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(MainActivity.this,
-                            "Fehler: Leeres Bitmap-Objekt als Ergebnis der Dekodierung erhalten.", Toast.LENGTH_LONG).show();
-
-                }
-            });
-        }*/
-
-
         Log.i(TAG4LOGGING, "Bitmap dekodiert, Höhe=" + bitmap.getHeight() + ", Breite=" + bitmap.getWidth() );
-        // Die Bilder sollten immer die Größe 512x512 haben
-
 
         _flagImageView.post( new Runnable() {
             @Override
@@ -178,7 +165,6 @@ public class MainActivity extends Activity {
         });
 
     }
-
 
     //Parsen des JSON-Dokuments <i>jsonString</i>, das von der Web-API zurückgeliefert wurde
     protected String parseJSON(String jsonString) throws Exception {
@@ -197,11 +183,13 @@ public class MainActivity extends Activity {
         String borders = "";
         String callingCodes = "";
         String altSpellings = "";
-        Character eins = null;
-        Character zwei = null;
+        Character firstCharacter = null;
+        Character secondCharacter = null;
 
         for (int i = 0; i < jsonArray.length(); i++) {
             JSONObject jsonobject = jsonArray.getJSONObject(i);
+
+            //Informationen von JSONObject als String speichern
             capital = jsonobject.getString("capital");
             region = jsonobject.getString("region");
             subregion = jsonobject.getString("subregion");
@@ -209,9 +197,9 @@ public class MainActivity extends Activity {
             currencies = jsonobject.getString("currencies");
             borders = jsonobject.getString("borders");
             callingCodes = jsonobject.getString("callingCodes");
-            altSpellings = jsonobject.getString("altSpellings");
 
 
+            //Array-String verschönern
             currencies = currencies.replace("[", "");
             currencies = currencies.replace("]", "");
             callingCodes = callingCodes.replace("[", "");
@@ -224,20 +212,19 @@ public class MainActivity extends Activity {
             currencies = currencies.replace(",", ", ");
             borders = borders.replace(",", ", ");
             callingCodes = callingCodes.replace(",", ", ");
-            eins = altSpellings.charAt(2);
-            zwei = altSpellings.charAt(3);
-            altSpellings = eins.toString()+zwei.toString();
-            altSpellings = altSpellings.toLowerCase();
-        }
 
-        _landkuerzel = altSpellings;
+            //Kürzel für Flagge-Url herausziehen und übergeben
+            altSpellings = jsonobject.getString("altSpellings");
+            firstCharacter = altSpellings.charAt(2);
+            secondCharacter = altSpellings.charAt(3);
+            altSpellings = firstCharacter.toString() + secondCharacter.toString();
+            altSpellings = altSpellings.toLowerCase();
+            _landkuerzel = altSpellings;
+        }
 
         //String für Ausgabe auf UI zusammenbauen
         return "Capital: " + capital  + "\nRegion: " + region  + "\nSubregion: " + subregion  + "\nPopulation: " + population   + "\nCurrencies: " + currencies    + "\nBorders: " + borders     + "\nCalling Codes: " + callingCodes;
     }
-
-
-
 
 
 	/* *************************** */
@@ -259,7 +246,7 @@ public class MainActivity extends Activity {
 
                     ergebnisDarstellen( ergString );
 
-                    InputStream input = zeigeBild(_landkuerzel);
+                    InputStream input = holeBild(_landkuerzel);
 
                     bildDarstellen(input);
                 }
@@ -267,17 +254,12 @@ public class MainActivity extends Activity {
                     ergebnisDarstellen("Keine Internetverbindung verfügbar.");
                     bildReset();
                 }
-
-
             }
             catch (Exception ex) {
-                //if(internet = true) {
                     ergebnisDarstellen("Keine Informationen gefunden.");
                     bildReset();
             }
         }
-
-
 
         //Methode um Ergebnis-String in TextView darzustellen
         protected void ergebnisDarstellen(String ergebnisStr) {
