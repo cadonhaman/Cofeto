@@ -39,20 +39,22 @@ public class MainActivity extends Activity {
     public static final String TAG4LOGGING = "Cofeto";
 
     //Button mit dem der Web-Request gestartet wird
-    protected Button _suchButton = null;
+    protected Button _searchButton = null;
 
     //Eingabefeld für die Suche
-    protected EditText _landEditText = null;
+    protected EditText _countryEditText = null;
 
     //Eingabe-String
-    protected String _eingabeLand = "";
+    protected String _inputCountry = "";
 
     //TextView zur Anzeige des Ergebnisses des Web-Requests auch zur Anzeige von Fehlermeldungen
-    protected TextView _ergebnisTextView = null;
+    protected TextView _resultTextView = null;
 
+    //ImageView zur Anzeige der Flagge des entsprechenden Landes
     protected ImageView _flagImageView = null;
 
-    protected String _landkuerzel = "";
+    //Kürzel für die Anzeige der Flagge
+    protected String _countryCode = "";
 
 
     //Lifecycle-Methode; Layout für UI laden und Referenzen auf UI-Elemente holen
@@ -61,21 +63,22 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        _suchButton       = (Button)   findViewById( R.id.suchButton );
-        _landEditText     = (EditText) findViewById( R.id.landEditText );
-        _ergebnisTextView = (TextView) findViewById( R.id.ergebnisTextView );
-        _flagImageView = (ImageView) findViewById( R.id.flagImageView);
+        _searchButton       = (Button)   findViewById( R.id.searchButton );
+        _countryEditText     = (EditText) findViewById( R.id.countryEditText );
+        _resultTextView = (TextView) findViewById( R.id.resultTextView );
+        _flagImageView    = (ImageView)findViewById( R.id.flagImageView);
 
-        _ergebnisTextView.setMovementMethod(new ScrollingMovementMethod()); // um vertikales Scrolling zu ermöglichen
+        //Vertikales Scrolling ermöglichen
+        _resultTextView.setMovementMethod(new ScrollingMovementMethod());
 
-        //Listener für Tastatur-Suchbutton
-        _landEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        //Listener für Tastatur-searchButton
+        _countryEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
 
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 boolean handled = false;
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                    onStartButtonBetaetigt(null);
+                    onSearch(null);
                     handled = true;
                 }
                 return handled;
@@ -83,25 +86,27 @@ public class MainActivity extends Activity {
         });
     }
 
-    //Event-Handler für Start-Button, wird in Layout-Daten mit Attribut "android:onClick" zugewiesen
-    public void onStartButtonBetaetigt(View view) {
+    //Event-Handler für Search-Button, wird in Layout-Daten mit Attribut "android:onClick" zugewiesen
+    public void onSearch(View view) {
 
         //Tastatur nach Suche und Cursor ausblenden
         InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        mgr.hideSoftInputFromWindow(_landEditText.getWindowToken(), 0);
+        mgr.hideSoftInputFromWindow(_countryEditText.getWindowToken(), 0);
         mgr.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);
 
-        _landEditText.setCursorVisible(false);
+        //Cursor deaktivieren während ein HTTP-Request läuft
+        _countryEditText.setCursorVisible(false);
 
+        //Button deaktivieren während ein HTTP-Request läuft
+        _searchButton.setEnabled(false);
 
-        _suchButton.setEnabled(false); // Button deaktivieren während ein HTTP-Request läuft
-
-        _eingabeLand = _landEditText.getText().toString();
+        //Input abspeichern
+        _inputCountry = _countryEditText.getText().toString();
 
         //Hintergrund-Thread mit HTTP-Request starten
-        MeinHintergrundThread mht = new MeinHintergrundThread();
-        mht.start();
-        _landEditText.setCursorVisible(true);
+        MyBackgroundThread mbt = new MyBackgroundThread();
+        mbt.start();
+        _countryEditText.setCursorVisible(true);
     }
 
     //Überprüfung der Internetverbindung → Anzeige spezifischer Warnmeldung möglich
@@ -114,10 +119,10 @@ public class MainActivity extends Activity {
         return false;
     }
 
-    public InputStream holeBild(String landKuerzel)throws Exception {
-
+    //Methoden für das Laden der Landesflagge
+    public InputStream getFlag(String countryCode) throws Exception {
         //Zusammenbauen der URL für die Flagge zum eingegebenen Land
-        URL url = new URL("http://www.geonames.org/flags/x/" + landKuerzel + ".gif");
+        URL url = new URL("http://www.geonames.org/flags/x/" + countryCode + ".gif");
         Log.i(TAG4LOGGING, "URL: " + url);
 
         HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
@@ -126,15 +131,31 @@ public class MainActivity extends Activity {
         return new BufferedInputStream(urlConnection.getInputStream());
     }
 
+    protected void displayFlag(InputStream inputStream) throws IOException {
+        final Bitmap bitmap = BitmapFactory.decodeStream( inputStream );
+
+        inputStream.close();
+
+        Log.i(TAG4LOGGING, "Bitmap dekodiert, Höhe=" + bitmap.getHeight() + ", Breite=" + bitmap.getWidth() );
+
+        _flagImageView.post( new Runnable() {
+            @Override
+            public void run() {
+                _flagImageView.setVisibility(View.VISIBLE);
+                _flagImageView.setImageBitmap(bitmap);
+            }
+        });
+    }
+
     //Methode für HTTP-Request zur Web-API
-    protected String holeDatenVonWebAPI() throws Exception {
+    protected String getDataFromWebAPI() throws Exception {
 
         //1: Request-Factory holen
         HttpTransport      httpTransport  = new NetHttpTransport();
         HttpRequestFactory requestFactory = httpTransport.createRequestFactory();
 
         //2: URL erzeugen und ggf. URL-Parametern hinzufügen
-        GenericUrl url = new GenericUrl("https://restcountries.eu/rest/v1/name/" + _eingabeLand + "?fullText=true");
+        GenericUrl url = new GenericUrl("https://restcountries.eu/rest/v1/name/" + _inputCountry + "?fullText=true");
 
         //3: eigentliches Absetzen des Requests
         HttpRequest  request      = requestFactory.buildGetRequest(url);
@@ -148,25 +169,7 @@ public class MainActivity extends Activity {
         return jsonResponseString;
     }
 
-    protected void bildDarstellen(InputStream inputStream) throws IOException {
-
-        final Bitmap bitmap = BitmapFactory.decodeStream( inputStream );
-
-        inputStream.close();
-
-        Log.i(TAG4LOGGING, "Bitmap dekodiert, Höhe=" + bitmap.getHeight() + ", Breite=" + bitmap.getWidth() );
-
-        _flagImageView.post( new Runnable() {
-            @Override
-            public void run() {
-                _flagImageView.setVisibility(View.VISIBLE);
-                _flagImageView.setImageBitmap(bitmap);
-                           }
-        });
-
-    }
-
-    //Parsen des JSON-Dokuments <i>jsonString</i>, das von der Web-API zurückgeliefert wurde
+    //Parsen des JSON-Dokuments, das von der Web-API zurückgeliefert wurde
     protected String parseJSON(String jsonString) throws Exception {
 
         if (jsonString == null || jsonString.trim().length() == 0) {
@@ -198,7 +201,6 @@ public class MainActivity extends Activity {
             borders = jsonobject.getString("borders");
             callingCodes = jsonobject.getString("callingCodes");
 
-
             //Array-String verschönern
             currencies = currencies.replace("[", "");
             currencies = currencies.replace("]", "");
@@ -213,16 +215,16 @@ public class MainActivity extends Activity {
             borders = borders.replace(",", ", ");
             callingCodes = callingCodes.replace(",", ", ");
 
-            //Kürzel für Flagge-Url herausziehen und übergeben
+            //Kürzel für Flaggen-Url herausziehen und übergeben
             altSpellings = jsonobject.getString("altSpellings");
             firstCharacter = altSpellings.charAt(2);
             secondCharacter = altSpellings.charAt(3);
             altSpellings = firstCharacter.toString() + secondCharacter.toString();
             altSpellings = altSpellings.toLowerCase();
-            _landkuerzel = altSpellings;
+            _countryCode = altSpellings;
         }
 
-        //String für Ausgabe auf UI zusammenbauen
+        //String für Ausgabe auf UI zusammensetzen
         return "Capital: " + capital  + "\nRegion: " + region  + "\nSubregion: " + subregion  + "\nPopulation: " + population   + "\nCurrencies: " + currencies    + "\nBorders: " + borders     + "\nCalling Codes: " + callingCodes;
     }
 
@@ -231,55 +233,56 @@ public class MainActivity extends Activity {
 	/* *** Start innere Klasse *** */
 	/* *************************** */
 
-    //Zugriff auf Web-API (Internet-Zugriff) wird in eigenen Thread ausgelagert
-    protected class MeinHintergrundThread extends Thread {
+    //Zugriff auf Web-API in eigenem Thread ausgelagert
+    protected class MyBackgroundThread extends Thread {
 
-        //Der Inhalt in der überschriebenen <i>run()</i>-Methode wird in einem Hintergrund-Thread ausgeführt
+        //Der Inhalt in der überschriebenen Methode wird in einem Hintergrund-Thread ausgeführt
         @Override
         public void run() {
             try {
                 String jsonDocument ="";
                 if(isOnline()) {
-                    jsonDocument = holeDatenVonWebAPI();
+                    jsonDocument = getDataFromWebAPI();
 
-                    String ergString = parseJSON(jsonDocument);
+                    String resString = parseJSON(jsonDocument);
 
-                    ergebnisDarstellen( ergString );
+                    displayResult( resString );
 
-                    InputStream input = holeBild(_landkuerzel);
+                    InputStream input = getFlag(_countryCode);
 
-                    bildDarstellen(input);
+                    displayFlag(input);
                 }
                 else{
-                    ergebnisDarstellen("Keine Internetverbindung verfügbar.");
-                    bildReset();
+                    displayResult("Keine Internetverbindung verfügbar.");
+                    flagReset();
                 }
             }
             catch (Exception ex) {
-                    ergebnisDarstellen("Keine Informationen gefunden.");
-                    bildReset();
+                    displayResult("Keine Informationen gefunden.");
+                    flagReset();
             }
         }
 
         //Methode um Ergebnis-String in TextView darzustellen
-        protected void ergebnisDarstellen(String ergebnisStr) {
+        protected void displayResult(String ergebnisStr) {
 
             final String finalString = ergebnisStr;
 
-            _suchButton.post( new Runnable() { // wir könnten auch die post()-Methode des TextView-Elements verwenden
+            _searchButton.post( new Runnable() {
                 @Override
                 public void run() {
 
-                    _suchButton.setEnabled(true);
+                    _searchButton.setEnabled(true);
 
-                    _ergebnisTextView.setText(finalString);
+                    _resultTextView.setText(finalString);
                 }
             });
 
         }
 
-        protected void bildReset(){
-            _suchButton.post( new Runnable() { // wir könnten auch die post()-Methode des TextView-Elements verwenden
+        //Zurücksetzen des Bildes
+        protected void flagReset(){
+            _searchButton.post( new Runnable() {
                 @Override
                 public void run() {
 
